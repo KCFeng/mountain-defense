@@ -172,7 +172,7 @@ const MONSTERS = {
 const charImages = {};
 for (const name in CHARACTERS) {
     const img = new Image();
-    img.src = `${name}.png`;
+    img.src = `images/${name}.png`;
     charImages[name] = img;
 }
 
@@ -180,7 +180,7 @@ for (const name in CHARACTERS) {
 const monsterImages = {};
 for (const name in MONSTERS) {
     const img = new Image();
-    img.src = `${name}.png`;
+    img.src = `images/${name}.png`;
     monsterImages[name] = img;
 }
 
@@ -322,7 +322,7 @@ function updateSidePanel() {
         // 資訊面板完整方框顯示，取消圓形裁切與強制填滿
         visual.style.backgroundColor = 'transparent'; 
         visual.style.boxShadow = `none`;
-        visual.style.backgroundImage = `url('${charName}.png')`;
+        visual.style.backgroundImage = `url('images/${charName}.png')`;
         visual.style.backgroundSize = 'contain'; 
         visual.style.backgroundRepeat = 'no-repeat';
         visual.style.backgroundPosition = 'center';
