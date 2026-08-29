@@ -69,3 +69,5 @@ Tailwind CSS (UI 佈局與響應式設計)
 確保角色與怪物的 .png 圖片資源已放在與 HTML 檔案相同的資料夾內。
 
 直接點擊兩下開啟 index.html 即可在瀏覽器中遊玩。
+
+你也可以直接開啟下列網址直接在線上遊玩：https://kcfeng.github.io/mountain-defense/
