@@ -9,6 +9,13 @@
         body { touch-action: none; overflow: hidden; }
         canvas { touch-action: none; }
         #side-panel { transition: transform 0.3s ease-in-out; }
+        
+        /* 整合新背景圖片 */
+        #canvas-container {
+            background-image: url('images/bg.jpg');
+            background-size: cover;
+            background-position: center;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white select-none">
@@ -47,6 +54,30 @@
     <div class="flex flex-1 flex-col md:flex-row overflow-hidden relative">
         <div id="canvas-container" class="flex-1 relative w-full h-full touch-none">
             <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+            
+            <!-- 誇張放大版出陣提示 -->
+            <div id="spawn-notice-container" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center opacity-0 scale-75 transition-all duration-500 pointer-events-none z-50 w-full">
+                <!-- 5倍大的角色圖片 -->
+                <img id="spawn-notice-img" src="" alt="Spawn" class="w-[480px] h-[480px] object-contain filter drop-shadow-[0_0_50px_rgba(255,255,255,0.6)] mb-8">
+                
+                <!-- 文字橫幅區塊 -->
+                <div class="bg-gray-900 bg-opacity-90 rounded-full px-16 py-6 shadow-[0_0_40px_rgba(0,0,0,0.8)] flex items-center border-2 border-gray-600">
+                    <span id="spawn-notice-name" class="text-6xl font-black tracking-widest">角色名稱</span>
+                    <span class="text-6xl font-black text-white ml-6 tracking-widest">出陣！</span>
+                </div>
+            </div>
+
+            <!-- BOSS 來襲提示 -->
+            <div id="boss-warning-container" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center opacity-0 scale-75 transition-all duration-500 pointer-events-none z-50 w-full">
+                <!-- 5倍大的BOSS圖片 -->
+                <img id="boss-warning-img" src="" alt="Boss" class="w-[480px] h-[480px] object-contain filter drop-shadow-[0_0_50px_rgba(239,68,68,0.8)] mb-8">
+                
+                <!-- 警告文字橫幅區塊 -->
+                <div class="bg-gray-900 bg-opacity-90 rounded-full px-16 py-6 shadow-[0_0_40px_rgba(239,68,68,0.8)] flex items-center border-2 border-red-600">
+                    <span id="boss-warning-name" class="text-6xl font-black text-red-500 tracking-widest drop-shadow-[0_0_20px_rgba(239,68,68,0.9)]">BOSS名稱</span>
+                    <span class="text-6xl font-black text-white ml-6 tracking-widest">來襲！</span>
+                </div>
+            </div>
             
             <!-- 環繞式操作按鈕 -->
             <div id="floating-menu" class="absolute hidden z-10 pointer-events-none" style="width: 0; height: 0;">
@@ -152,6 +183,7 @@ const CHARACTERS = {
     '神話暗黑騎士': { level: 5, maxMP: 100, damage: 500, range: 150, cd: 0.4, maxStack: 1, sellPrice: 0, skills: ['衝擊之暈(max)'] }
 };
 
+// 依據最新需求更新 BOSS 血量
 const MONSTERS = {
     '食人妖精': { tier: '低', speed: 60, hp: 40, waves: [1,2,3,4,6,7,8,9], color: '#4ade80' },
     '侏儒': { tier: '低', speed: 90, hp: 24, waves: [1,2,3,4,6,7,8,9], color: '#22c55e' },
@@ -161,11 +193,11 @@ const MONSTERS = {
     '妖魔騎兵': { tier: '高', speed: 80, hp: 150, waves: [16,17,18,19,21,22,23,24], color: '#c084fc' },
     '妖魔斧兵': { tier: '高', speed: 60, hp: 150, waves: [16,17,18,19,21,22,23,24], color: '#a855f7' },
     '瑪依奴': { tier: '高', speed: 60, hp: 150, waves: [16,17,18,19,21,22,23,24], color: '#9333ea' },
-    '覺醒炎魔': { tier: 'BOSS', speed: 40, hp: 1500, waves: [5], color: '#ef4444' },
-    '變型怪': { tier: 'BOSS', speed: 60, hp: 1750, waves: [10], color: '#dc2626' },
-    '白金巴風特': { tier: 'BOSS', speed: 70, hp: 2000, waves: [15], color: '#b91c1c' },
-    '白金死亡騎士': { tier: 'BOSS', speed: 80, hp: 2500, waves: [20], color: '#991b1b' },
-    '支配者吉爾塔斯': { tier: 'BOSS', speed: 90, hp: 3000, waves: [25], color: '#7f1d1d' },
+    '覺醒炎魔': { tier: 'BOSS', speed: 40, hp: 3000, waves: [5], color: '#ef4444' },
+    '變型怪': { tier: 'BOSS', speed: 60, hp: 3500, waves: [10], color: '#dc2626' },
+    '白金巴風特': { tier: 'BOSS', speed: 70, hp: 4000, waves: [15], color: '#b91c1c' },
+    '白金死亡騎士': { tier: 'BOSS', speed: 80, hp: 5000, waves: [20], color: '#991b1b' },
+    '支配者吉爾塔斯': { tier: 'BOSS', speed: 90, hp: 6000, waves: [25], color: '#7f1d1d' },
 };
 
 // 載入角色圖片資源
@@ -192,7 +224,7 @@ for (const [name, data] of Object.entries(CHARACTERS)) {
 const gameState = {
     gold: 500, wave: 0, phase: 'MENU', phaseTimer: 0, isGameOver: false,
     difficulty: null, baseEnemyCount: 0, enemiesSpawnedThisWave: 0, spawnCooldown: 0,
-    lastTime: 0, passiveIncomeTimer: 0, mpRegenTimer: 0
+    lastTime: 0, passiveIncomeTimer: 0, mpRegenTimer: 0, stepAngle: 0
 };
 
 let grids = [];
@@ -343,6 +375,48 @@ function updateSidePanel() {
     updateFloatingMenuPosition();
 }
 
+let spawnNoticeTimer = null;
+function showSpawnNotice(charName, level) {
+    const container = document.getElementById('spawn-notice-container');
+    const img = document.getElementById('spawn-notice-img');
+    const nameSpan = document.getElementById('spawn-notice-name');
+    
+    img.src = `images/${charName}.png`;
+    nameSpan.innerText = charName;
+    
+    if (level === 4) nameSpan.className = 'text-purple-400 drop-shadow-[0_0_20px_rgba(168,85,247,0.9)] text-6xl font-black tracking-widest';
+    else if (level === 5) nameSpan.className = 'text-yellow-400 drop-shadow-[0_0_20px_rgba(234,179,8,0.9)] text-6xl font-black tracking-widest';
+    else nameSpan.className = 'text-white text-6xl font-black tracking-widest';
+
+    container.classList.remove('opacity-0', 'scale-75');
+    container.classList.add('opacity-100', 'scale-100');
+
+    if (spawnNoticeTimer) clearTimeout(spawnNoticeTimer);
+    spawnNoticeTimer = setTimeout(() => {
+        container.classList.remove('opacity-100', 'scale-100');
+        container.classList.add('opacity-0', 'scale-75');
+    }, 2500);
+}
+
+let bossWarningTimer = null;
+function showBossWarning(bossName) {
+    const container = document.getElementById('boss-warning-container');
+    const img = document.getElementById('boss-warning-img');
+    const nameSpan = document.getElementById('boss-warning-name');
+    
+    img.src = `images/${bossName}.png`;
+    nameSpan.innerText = bossName;
+    
+    container.classList.remove('opacity-0', 'scale-75');
+    container.classList.add('opacity-100', 'scale-100');
+
+    if (bossWarningTimer) clearTimeout(bossWarningTimer);
+    bossWarningTimer = setTimeout(() => {
+        container.classList.remove('opacity-100', 'scale-100');
+        container.classList.add('opacity-0', 'scale-75');
+    }, 3000);
+}
+
 function handleInteraction(e) {
     if(e.type === 'touchstart') e.preventDefault();
     if (gameState.isGameOver || gameState.phase === 'MENU') return;
@@ -407,7 +481,8 @@ function createUnitInstance(charName) {
     return {
         charName: charName,
         cooldown: 0,
-        mp: CHARACTERS[charName].maxMP
+        mp: CHARACTERS[charName].maxMP,
+        castTimer: 0 // 新增施法時間屬性
     };
 }
 
@@ -428,6 +503,11 @@ function summonUnit() {
 
     gameState.gold -= 50;
     targetGrid.units.push(createUnitInstance(newCharName));
+    
+    // 觸發出陣提示 (僅限傳說與神話階級)
+    if (newLevel >= 4) {
+        showSpawnNotice(newCharName, newLevel);
+    }
     
     if(selectedGrid === targetGrid) updateSidePanel();
     updateUI();
@@ -464,6 +544,12 @@ function mergeUnits() {
 
     let nextCharName = getRandomCharacterByLevel(nextLevel);
     selectedGrid.units = [createUnitInstance(nextCharName)];
+    
+    // 觸發出陣提示 (僅限傳說與神話階級)
+    if (nextLevel >= 4) {
+        showSpawnNotice(nextCharName, nextLevel);
+    }
+    
     updateSidePanel();
 }
 
@@ -488,6 +574,14 @@ function startPhase(newPhase) {
         gameState.phaseTimer = 30;
         gameState.enemiesSpawnedThisWave = 0;
         gameState.spawnCooldown = 0; 
+        
+        // 檢查是否為 BOSS 波次，觸發來襲動畫
+        if (gameState.wave % 5 === 0) {
+            let bossName = Object.keys(MONSTERS).find(name => MONSTERS[name].tier === 'BOSS' && MONSTERS[name].waves.includes(gameState.wave));
+            if (bossName) {
+                showBossWarning(bossName);
+            }
+        }
     } else if (newPhase === 'COOLDOWN') {
         gameState.phaseTimer = 5; 
     }
@@ -593,7 +687,11 @@ class Enemy {
             
             // 如果暈眩，可以考慮讓圖片變半透明或加特效，這裡簡單處理
             if(this.stunTimer > 0) ctx.globalAlpha = 0.7;
-            ctx.drawImage(img, this.x - drawW / 2, this.y - drawH / 2, drawW, drawH);
+            
+            // 套用旋轉踏步效果
+            ctx.translate(this.x, this.y);
+            ctx.rotate(gameState.stepAngle);
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
             ctx.restore();
             
         } else {
@@ -649,6 +747,9 @@ function gameLoop(timestamp) {
     if (!gameState.lastTime) gameState.lastTime = timestamp;
     const dt = (timestamp - gameState.lastTime) / 1000;
     gameState.lastTime = timestamp;
+
+    // 計算踏步旋轉角度：週期1秒 (0.5秒正、0.5秒負)，振幅2度
+    gameState.stepAngle = Math.sin(timestamp / 500 * Math.PI) * 2 * (Math.PI / 180);
 
     if (!gameState.isGameOver) {
         if (enemies.length > 50) endGame(false);
@@ -731,6 +832,11 @@ function gameLoop(timestamp) {
                 let actualRange = charData.range * gameScale; 
 
                 grid.units.forEach(unit => {
+                    // 扣減施法動畫計時器
+                    if (unit.castTimer > 0) {
+                        unit.castTimer = Math.max(0, unit.castTimer - dt);
+                    }
+                    
                     unit.cooldown -= dt;
                     if (unit.cooldown <= 0 && enemies.length > 0) {
                         let target = enemies.find(e => Math.hypot(e.x - cx, e.y - cy) <= actualRange);
@@ -743,6 +849,8 @@ function gameLoop(timestamp) {
                                     if (Math.random() <= skill.rate) {
                                         skillFired = true;
                                         unit.mp -= skill.costMP;
+                                        unit.castTimer = 0.6; // 設定施法動畫持續 0.6 秒
+                                        
                                         if(selectedGrid === grid) updateSidePanel();
                                         
                                         if (skill.targetType === 'SINGLE') {
@@ -807,10 +915,14 @@ function gameLoop(timestamp) {
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#1f2937'; ctx.fillRect(pathRect.x, pathRect.y, pathRect.w, pathRect.h);
-    ctx.fillStyle = '#111827';
-    let deployW = Math.max(0, 7 * (grids[0]?.size || 0)); let deployH = Math.max(0, 4 * (grids[0]?.size || 0));
-    if(grids.length > 0) ctx.fillRect(grids[0].x, grids[0].y, deployW, deployH);
+    
+    // 繪製防禦陣地半透明底色，讓高地背景清楚展現
+    let deployW = Math.max(0, 7 * (grids[0]?.size || 0)); 
+    let deployH = Math.max(0, 4 * (grids[0]?.size || 0));
+    if(grids.length > 0) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
+        ctx.fillRect(grids[0].x, grids[0].y, deployW, deployH);
+    }
 
     // 警告紅框 (40隻)
     if (enemies.length >= 40 && !gameState.isGameOver) {
@@ -820,7 +932,13 @@ function gameLoop(timestamp) {
     }
 
     grids.forEach(grid => {
-        ctx.strokeStyle = '#374151'; ctx.lineWidth = 1; ctx.strokeRect(grid.x, grid.y, grid.size, grid.size);
+        // 僅在有選取角色時顯示高亮網格
+        if (selectedGrid) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; 
+            ctx.lineWidth = 1; 
+            ctx.strokeRect(grid.x, grid.y, grid.size, grid.size);
+        }
+
         if (grid === selectedGrid) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.fillRect(grid.x, grid.y, grid.size, grid.size);
             if (grid.units.length > 0) {
@@ -840,69 +958,123 @@ function gameLoop(timestamp) {
             let img = charImages[grid.units[0].charName];
             
             let isImageLoaded = img && img.complete && img.naturalWidth > 0;
+            
+            let magicColor = '#ffffff';
+            if (charData.skills.length > 0) magicColor = SKILLS[charData.skills[0]].color;
 
-            if (isImageLoaded) {
-                let aspect = img.naturalWidth / img.naturalHeight;
-                let isSingleMax = charData.maxStack === 1;
+            let isSingleMax = charData.maxStack === 1;
+            let baseDrawH = isSingleMax ? (grid.size * 0.95) : (grid.size * 0.65); 
+            
+            let yOffset = grid.size * 0.15;
+            let xOffset = grid.size * 0.22;
+
+            // 準備每個角色的繪製位置
+            let positions = [];
+            if (count === 1) {
+                positions.push({x: cx, y: cy, u: grid.units[0]});
+            } else if (count === 2) {
+                positions.push({x: cx - xOffset, y: cy, u: grid.units[0]});
+                positions.push({x: cx + xOffset, y: cy, u: grid.units[1]});
+            } else if (count >= 3) {
+                positions.push({x: cx, y: cy - yOffset, u: grid.units[0]}); 
+                positions.push({x: cx - xOffset, y: cy + yOffset, u: grid.units[1]}); 
+                positions.push({x: cx + xOffset, y: cy + yOffset, u: grid.units[2]}); 
+            }
+
+            positions.forEach(pos => {
+                let u = pos.u;
+                let isCasting = u.castTimer && u.castTimer > 0;
+                let scaleMultiplier = 1.0; // 移除施法放大效果
+                let drawH = baseDrawH * scaleMultiplier;
                 
-                // 傳說與神話（stack=1）放大至佔滿整個格子；低階堆疊維持適當比例
-                let drawH = isSingleMax ? (grid.size * 0.95) : (grid.size * 0.65); 
-                let drawW = drawH * aspect;
-                
-                let drawSprite = (x, y) => {
+                if (isImageLoaded) {
+                    let aspect = img.naturalWidth / img.naturalHeight;
+                    let drawW = drawH * aspect;
+                    
                     ctx.save();
                     ctx.beginPath();
-                    let shadowW = isSingleMax ? drawW * 0.5 : drawW * 0.4;
-                    let shadowH = isSingleMax ? drawW * 0.2 : drawW * 0.15;
-                    ctx.ellipse(x, y + drawH * 0.4, shadowW, shadowH, 0, 0, Math.PI * 2);
+                    // 陰影不隨施法放大，避免遮蔽網格
+                    let shadowW = isSingleMax ? (baseDrawH * aspect) * 0.5 : (baseDrawH * aspect) * 0.4;
+                    let shadowH = isSingleMax ? (baseDrawH * aspect) * 0.2 : (baseDrawH * aspect) * 0.15;
+                    ctx.ellipse(pos.x, pos.y + baseDrawH * 0.4, shadowW, shadowH, 0, 0, Math.PI * 2);
                     ctx.fillStyle = color;
                     ctx.globalAlpha = 0.4;
                     ctx.fill();
                     ctx.globalAlpha = 1.0;
                     
-                    ctx.drawImage(img, x - drawW / 2, y - drawH / 2, drawW, drawH);
+                    if (isCasting) {
+                        let alpha = u.castTimer / 0.6; // 淡出計算
+                        ctx.save();
+                        ctx.translate(pos.x, pos.y);
+                        ctx.rotate(timestamp / 300); // 魔法陣旋轉
+                        ctx.globalAlpha = alpha;
+                        ctx.strokeStyle = magicColor;
+                        ctx.lineWidth = 2 * gameScale;
+                        ctx.shadowColor = magicColor;
+                        ctx.shadowBlur = 10 * gameScale;
+                        
+                        let r = drawW * 0.6;
+                        // 畫外圓與內圓
+                        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.stroke();
+                        
+                        // 畫五芒星
+                        let pOrder = [0, 2, 4, 1, 3, 0];
+                        ctx.beginPath();
+                        pOrder.forEach((idx, step) => {
+                            let angle = (idx * 2 * Math.PI / 5) - Math.PI / 2;
+                            let px = Math.cos(angle) * r * 0.8;
+                            let py = Math.sin(angle) * r * 0.8;
+                            if (step === 0) ctx.moveTo(px, py);
+                            else ctx.lineTo(px, py);
+                        });
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                    
+                    ctx.translate(pos.x, pos.y);
+                    if (!isCasting) {
+                        ctx.rotate(gameState.stepAngle);
+                    }
+                    
+                    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
                     ctx.restore();
-                };
+                    
+                } else {
+                    let dotRadius = Math.max(6, grid.size * 0.16) * scaleMultiplier;
+                    
+                    if (isCasting) {
+                        let alpha = u.castTimer / 0.6;
+                        ctx.save();
+                        ctx.translate(pos.x, pos.y);
+                        ctx.rotate(timestamp / 300);
+                        ctx.globalAlpha = alpha;
+                        ctx.strokeStyle = magicColor;
+                        ctx.lineWidth = 2 * gameScale;
+                        let r = dotRadius * 2.5;
+                        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+                        let pOrder = [0, 2, 4, 1, 3, 0];
+                        ctx.beginPath();
+                        pOrder.forEach((idx, step) => {
+                            let angle = (idx * 2 * Math.PI / 5) - Math.PI / 2;
+                            let px = Math.cos(angle) * r;
+                            let py = Math.sin(angle) * r;
+                            if (step === 0) ctx.moveTo(px, py);
+                            else ctx.lineTo(px, py);
+                        });
+                        ctx.stroke();
+                        ctx.restore();
+                    }
 
-                let yOffset = grid.size * 0.15;
-                let xOffset = grid.size * 0.22;
-
-                if (count === 1) {
-                    drawSprite(cx, cy);
-                } else if (count === 2) {
-                    drawSprite(cx - xOffset, cy);
-                    drawSprite(cx + xOffset, cy);
-                } else if (count >= 3) {
-                    // 正三角形堆疊：後排先畫，前排左右後畫產生遮擋感
-                    drawSprite(cx, cy - yOffset); 
-                    drawSprite(cx - xOffset, cy + yOffset); 
-                    drawSprite(cx + xOffset, cy + yOffset); 
-                }
-            } else {
-                let dotRadius = Math.max(6, grid.size * 0.16);
-                let offset = dotRadius * 1.1;
-
-                let drawDot = (x, y) => {
                     ctx.beginPath();
-                    ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+                    ctx.arc(pos.x, pos.y, dotRadius, 0, Math.PI * 2);
                     ctx.fillStyle = color;
                     ctx.fill();
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = '#374151'; 
                     ctx.stroke();
-                };
-
-                if (count === 1) {
-                    drawDot(cx, cy);
-                } else if (count === 2) {
-                    drawDot(cx - offset, cy);
-                    drawDot(cx + offset, cy);
-                } else if (count >= 3) {
-                    drawDot(cx, cy - offset);
-                    drawDot(cx - offset, cy + offset);
-                    drawDot(cx + offset, cy + offset);
                 }
-            }
+            });
         }
     });
 
@@ -922,9 +1094,12 @@ function gameLoop(timestamp) {
     requestAnimationFrame(gameLoop);
 }
 
+// 確保腳本載入後啟動引擎
 resizeAndLayout();
 updateSidePanel();
-requestAnimationFrame(gameLoop);
+window.onload = function() {
+    requestAnimationFrame(gameLoop);
+};
 
 </script>
 </body>
