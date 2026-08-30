@@ -1,6 +1,6 @@
-中央山脈防禦 (Central Mountain Defense)
+貓咪山脈防禦戰 (Cat Mountain Defense)
 
-這是一個基於 HTML5 Canvas 與 Vanilla JavaScript (搭配 Tailwind CSS) 開發的網頁版輕量級塔防遊戲。玩家需要在中央山脈的防線中，透過召喚與合成英雄，抵禦不斷繞圈的怪物大軍。
+這是一個基於 HTML5 Canvas 與 Vanilla JavaScript (搭配 Tailwind CSS) 開發的網頁版輕量級塔防同人遊戲。玩家需要在貓咪山脈的防線中，透過召喚與合成英雄，抵禦不斷繞圈的怪物大軍。
 
 🎮 遊戲特色
 
