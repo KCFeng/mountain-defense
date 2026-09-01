@@ -6,12 +6,17 @@
     <title>貓咪山脈防禦戰</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { touch-action: none; overflow: hidden; }
+        body { touch-action: none; overflow: hidden; -webkit-tap-highlight-color: transparent; user-select: none; }
         canvas { touch-action: none; }
         #side-panel { transition: transform 0.3s ease-in-out; }
     </style>
 </head>
 <body class="bg-gray-900 text-white select-none">
+
+<!-- Splash Screen (啟動過場畫面) -->
+<div id="splash-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gray-950 transition-opacity duration-1000">
+    <div class="absolute inset-0 bg-[url('images/splash.jpg')] bg-cover bg-center"></div>
+</div>
 
 <div id="app-wrapper" class="flex flex-col w-full h-[100dvh] overflow-hidden">
     
@@ -46,7 +51,6 @@
                 <div class="mb-1 text-gray-300">⚔️ 角色: <span id="unit-count-display" class="text-blue-400 text-sm md:text-base">0</span> / 23</div>
                 <div class="text-gray-300">💰 金幣: <span id="gold-display" class="text-yellow-400 text-sm md:text-base">500</span></div>
             </div>
-            <!-- 新增設定按鈕 -->
             <button onclick="showSettingsMenu()" class="text-gray-400 hover:text-white transition transform active:scale-90 text-2xl md:text-3xl ml-1 md:ml-2">
                 ⚙️
             </button>
@@ -189,6 +193,21 @@
 </div>
 
 <script>
+// --- 初始化過場動畫 ---
+window.onload = function() {
+    // 停留 1.5 秒後開始淡出過場畫面
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        splash.classList.add('opacity-0', 'pointer-events-none');
+        // 淡出動畫為 1 秒，之後可以選擇徹底隱藏
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 1000);
+    }, 1500);
+
+    requestAnimationFrame(gameLoop);
+};
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -913,7 +932,7 @@ function endGame(isWin) {
     modal.classList.remove('hidden');
     document.getElementById('game-over-title').innerText = isWin ? '任務成功！' : '任務失敗！';
     document.getElementById('game-over-title').classList.add(isWin ? 'text-yellow-400' : 'text-red-500');
-    document.getElementById('game-over-desc').innerText = isWin ? '您成功守護了中央山脈！' : '怪物數量失控，防線崩潰！';
+    document.getElementById('game-over-desc').innerText = isWin ? '您成功守護了貓咪山脈！' : '怪物數量失控，防線崩潰！';
 }
 
 function drawSpeechBubble(ctx, x, y, width, currentTimer, maxTimer, text, color) {
@@ -1389,9 +1408,6 @@ function gameLoop(timestamp) {
 
 resizeAndLayout();
 updateSidePanel();
-window.onload = function() {
-    requestAnimationFrame(gameLoop);
-};
 
 </script>
 </body>
