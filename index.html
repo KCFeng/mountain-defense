@@ -218,7 +218,6 @@ function takeScreenshot() {
         link.href = dataURL;
         link.click();
     }).catch(err => {
-        // 提供友善的錯誤提示
         alert('截圖失敗！若您直接以 file:// 開啟檔案，瀏覽器安全機制會阻擋截圖。建議使用 Local Server 運行。');
         console.error(err);
     });
@@ -284,7 +283,6 @@ const MONSTERS = {
 const charImages = {};
 for (const name in CHARACTERS) {
     const img = new Image();
-    // 移除 crossOrigin 屬性以避免 file:// 協定下的存取被阻擋
     img.src = `images/${name}.png`;
     charImages[name] = img;
 }
@@ -292,13 +290,11 @@ for (const name in CHARACTERS) {
 const monsterImages = {};
 for (const name in MONSTERS) {
     const img = new Image();
-    // 移除 crossOrigin 屬性
     img.src = `images/${name}.png`;
     monsterImages[name] = img;
 }
 
 const bgImage = new Image();
-// 移除 crossOrigin 屬性
 bgImage.src = 'images/bg.jpg';
 
 const POOL_BY_LEVEL = { 1: [], 2: [], 3: [], 4: [], 5: [] };
@@ -458,7 +454,8 @@ function updateSidePanel() {
 
         visual.style.backgroundColor = 'transparent'; 
         visual.style.boxShadow = `none`;
-        visual.style.backgroundImage = `url('images/${charName}.png')`;
+        // 核心更新：將預覽圖改為讀取 videos 資料夾下的動態 gif
+        visual.style.backgroundImage = `url('videos/${charName}.gif')`;
         visual.style.backgroundSize = 'contain'; 
         visual.style.backgroundRepeat = 'no-repeat';
         visual.style.backgroundPosition = 'center';
